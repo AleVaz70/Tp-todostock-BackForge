@@ -28,16 +28,18 @@ Grupo BackForge — Comisión D — Año 2026
 
 ## Estructura del proyecto
  
+```plaintext
 todostock/
-├── data/           → archivos JSON (persistencia)
+├── data/ → archivos JSON (persistencia)
 ├── src/
 │   ├── controllers/
 │   ├── models/
 │   ├── routes/
 │   ├── services/
 │   └── storage/
-├── views/          → plantillas Pug
+├── views/ → plantillas Pug
 └── app.js
+```
 
 ## Cómo ejecutar
 
