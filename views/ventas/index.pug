@@ -1,0 +1,28 @@
+extends ../layout
+
+block contenido
+  h1= titulo
+
+  if cantidad === 0
+    p.alerta No hay pedidos registrados todavía.
+  else
+    p Total de pedidos: #{cantidad}
+
+  table
+    thead
+      tr
+        th ID
+        th Cliente ID
+        th Total
+        th Estado
+        th Fecha creación
+    tbody
+      each pedido in pedidos
+        tr
+          td= pedido.id
+          td= pedido.clienteId
+          td $#{pedido.total}
+          td
+            //- El badge cambia de color según el estado del pedido.
+            span(class=`badge ${pedido.estado}`)= pedido.estado
+          td= pedido.fechaCreacion

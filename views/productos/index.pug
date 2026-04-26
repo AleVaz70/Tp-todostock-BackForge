@@ -1,0 +1,35 @@
+//- Esta vista extiende el layout, reutilizando su estructura HTML completa.
+extends ../layout
+
+block contenido
+  h1= titulo
+
+  //- Condicional: muestra un mensaje distinto según la cantidad de productos.
+  //- Uso de condicionales en Pug.
+  if productos.length === 0
+    p.alerta No hay productos cargados en el catálogo todavía.
+  else if productos.length > 10
+    p.alerta Catálogo numeroso: #{productos.length} productos registrados.
+  else
+    p Mostrando #{productos.length} producto(s) en el catálogo.
+
+  table
+    thead
+      tr
+        th ID
+        th SKU
+        th Nombre
+        th Categoría
+        th Precio
+        th Stock mínimo
+    tbody
+      //- each recorre el array de productos y genera una fila por cada uno.
+      //- Lista dinámica con Pug.
+      each producto in productos
+        tr
+          td= producto.id
+          td= producto.codigoSKU || '—'
+          td= producto.nombre
+          td= producto.categoria
+          td $#{producto.precio}
+          td= producto.stockMinimo
