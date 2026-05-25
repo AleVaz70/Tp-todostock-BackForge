@@ -107,9 +107,18 @@ Motor de Plantillas: Pug (Server-Side Rendering integrado)
 Configuración: Dotenv (Variables de entorno)
 
 Bibliografía Utilizada
-ExpressJS Framework Reference: https://expressjs.com/
-Mongoose ODM Document Models & Validation: https://mongoosejs.com/docs/
-Apuntes Académicos de la Cátedra (IFTS N° 29): Bloque 7.1 (Conceptos de MongoDB), Bloque 7.2 (Schemas y validaciones) y Bloque 7.3 (Operadores de filtrado y comparación).
+### 📚 Documentación Oficial de Tecnologías
+
+* **[Node.js Core Documentation](https://nodejs.org/docs/) (v18 LTS / v20 LTS):** Referencia para módulos nativos, asincronismo y manejo de flujos en el entorno de ejecución.
+* **[Express.js Framework](https://expressjs.com/):** Guía oficial para ruteo modular, controladores, ciclo de vida de peticiones (`req`, `res`) y diseño de middlewares globales de manejo de errores.
+* **[Mongoose ODM Documentation](https://mongoosejs.com/docs/):** Documentación técnica de referencia para la declaración de *Schemas*, tipos de datos, restricciones (`required`, `unique`), métodos de persistencia (`.save()`, `findByIdAndUpdate()`, `findByIdAndDelete()`) y vinculación documental (`.populate()`).
+* **[Pug Template Engine](https://pugjs.org/):** Guía de referencia sintáctica para la herencia de plantillas (`extends`, `block`), renderizado de datos del lado del servidor (*Server-Side Rendering*) e iteración de colecciones NoSQL (`each...in`).
+
+### 🎓 Apuntes Teóricos de la Cátedra (IFTS N° 29)
+
+* **Bloque 7.1 — Introducción a MongoDB:** Conceptos fundamentales de bases de datos NoSQL orientadas a documentos, equivalencias relacionales (SQL vs. NoSQL) e integración nativa con JavaScript.
+* **Bloque 7.2 — Operadores de elementos y Schemas en MongoDB:** Reglas de validación estructural antes de la persistencia y control de consistencia de datos en operaciones CRUD.
+* **Bloque 7.3 — Operadores en MongoDB:** Sintaxis y aplicación de operadores de comparación (`$gt`, `$gte`, `$lt`, `$lte`) y operadores lógicos (`$and`, `$or`) en la construcción de consultas avanzadas para la capa de lógica de negocio.
 
 Instrucciones para la Corrección (Evaluación de Cátedra)
 Para evaluar el proyecto de forma correcta en un entorno local, por favor abra una terminal en la raíz del proyecto y siga este orden estricto de comandos:
