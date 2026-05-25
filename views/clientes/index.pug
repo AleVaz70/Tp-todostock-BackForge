@@ -1,0 +1,36 @@
+extends ../layout
+
+block contenido
+  h1= titulo
+
+  //- Condicional según cantidad de clientes, igual que en productos.
+  if cantidad === 0
+    p.alerta No hay clientes registrados todavía.
+  else if cantidad > 5
+    p Cartera numerosa: #{cantidad} clientes registrados.
+  else
+    p Cartera reducida: #{cantidad} clientes registrados.
+
+  table
+    thead
+      tr
+        th ID
+        th Nombre
+        th CUIT
+        th Límite crédito
+        th Días plazo
+        th Estado
+    tbody
+      each cliente in clientes
+        tr
+          td= cliente.id
+          td= cliente.nombre
+          td= cliente.cuit
+          td $#{cliente.limiteCredito}
+          td= cliente.diasPlazo
+          td
+            //- Usamos condicional para mostrar un badge de color según estado.
+            if cliente.activo
+              span.badge.activo Activo
+            else
+              span.badge.inactivo Bloqueado
