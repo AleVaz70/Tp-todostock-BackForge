@@ -1,0 +1,218 @@
+# ============================================================
+# TODOSTOCK - PROTOCOLO DE PRUEBAS SEGÚN PDF
+# ============================================================
+
+### 1. PRODUCTOS
+# 1.1. Crear producto 1: Lavandina
+POST http://localhost:3000/productos/api
+Content-Type: application/json
+
+{
+  "codigoSKU": "LAV-1L-UN",
+  "nombre": "Lavandina 1L",
+  "descripcion": "Lavandina concentrada apta para uso doméstico e institucional",
+  "categoria": "Desinfectantes",
+  "unidad": "litro",
+  "precio": 850,
+  "stockMinimo": 50
+}
+
+### 1.2. Crear producto 2: Detergente
+POST http://localhost:3000/productos/api
+Content-Type: application/json
+
+{
+  "codigoSKU": "DET-500-UN",
+  "nombre": "Detergente 500ml",
+  "descripcion": "Detergente líquido concentrado para vajilla",
+  "categoria": "Detergentes",
+  "unidad": "unidad",
+  "precio": 620,
+  "stockMinimo": 30
+}
+
+### 1.3. Crear producto 3: Escoba
+POST http://localhost:3000/productos/api
+Content-Type: application/json
+
+{
+  "codigoSKU": "ESC-MED-UN",
+  "nombre": "Escoba mediana",
+  "descripcion": "Escoba de cerdas duras para uso industrial",
+  "categoria": "Limpieza dura",
+  "unidad": "unidad",
+  "precio": 1200,
+  "stockMinimo": 10
+}
+
+### 1.4. Listar todos los productos
+GET http://localhost:3000/productos/api
+
+### 1.5. Filtrar por categoría
+GET http://localhost:3000/productos/api?categoria=Desinfectantes
+
+### 1.6. Obtener un producto específico
+GET http://localhost:3000/productos/api/1
+
+### 1.7. Actualizar precio
+PUT http://localhost:3000/productos/api/1
+Content-Type: application/json
+
+{
+  "precio": 920
+}
+
+### 1.8. ERROR: Intentar crear con SKU duplicado
+POST http://localhost:3000/productos/api
+Content-Type: application/json
+
+{
+  "codigoSKU": "LAV-1L-UN",
+  "nombre": "Lavandina copia",
+  "categoria": "Desinfectantes",
+  "unidad": "litro",
+  "precio": 800,
+  "stockMinimo": 20
+}
+
+### 1.9. ERROR: Intentar crear sin campos obligatorios
+POST http://localhost:3000/productos/api
+Content-Type: application/json
+
+{
+  "nombre": "Producto incompleto"
+}
+
+
+### 2. CLIENTES
+# 2.1. Crear cliente 1: Almacén Don Jorge
+POST http://localhost:3000/clientes/api
+Content-Type: application/json
+
+{
+  "nombre": "Almacén Don Jorge",
+  "cuit": "20-33445566-7",
+  "telefono": "341-555-0101",
+  "email": "donjorge@gmail.com",
+  "direccion": "Av. Pellegrini 1234, Rosario",
+  "condicionIVA": "responsable_inscripto",
+  "limiteCredito": 50000,
+  "diasPlazo": 30
+}
+
+### 2.2. Crear cliente 2: Supermercado El Ahorro
+POST http://localhost:3000/clientes/api
+Content-Type: application/json
+
+{
+  "nombre": "Supermercado El Ahorro",
+  "cuit": "30-77889900-1",
+  "telefono": "341-555-0202",
+  "email": "compras@elahorro.com.ar",
+  "direccion": "San Martín 567, Rosario",
+  "condicionIVA": "responsable_inscripto",
+  "limiteCredito": 200000,
+  "diasPlazo": 15
+}
+
+### 2.3. Crear cliente 3: Limpieza Total S.R.L.
+POST http://localhost:3000/clientes/api
+Content-Type: application/json
+
+{
+  "nombre": "Limpieza Total S.R.L.",
+  "cuit": "30-11223344-5",
+  "telefono": "341-555-0303",
+  "email": "admin@limpiezatotal.com.ar",
+  "direccion": "Córdoba 890, Rosario",
+  "condicionIVA": "monotributista",
+  "limiteCredito": 80000,
+  "diasPlazo": 30
+}
+
+### 2.4. Listar todos los clientes
+GET http://localhost:3000/clientes/api
+
+### 2.5. Listar solo clientes activos
+GET http://localhost:3000/clientes/api?soloActivos=true
+
+### 2.6. Obtener un cliente específico
+GET http://localhost:3000/clientes/api/1
+
+### 2.7. Actualizar límite de crédito
+PUT http://localhost:3000/clientes/api/1
+Content-Type: application/json
+
+{
+  "limiteCredito": 75000
+}
+
+### 2.8. Bloquear cliente 2
+PATCH http://localhost:3000/clientes/api/2/bloquear
+
+### 2.9. Verificar que aparece bloqueado (activo: false)
+GET http://localhost:3000/clientes/api/2
+
+### 2.10. ERROR: Intentar bloquear de nuevo
+PATCH http://localhost:3000/clientes/api/2/bloquear
+
+### 2.11. Desbloquear cliente 2
+PATCH http://localhost:3000/clientes/api/2/desbloquear
+
+### 2.12. ERROR: Intentar crear con CUIT mal formateado
+POST http://localhost:3000/clientes/api
+Content-Type: application/json
+
+{
+  "nombre": "Cliente malo",
+  "cuit": "123456789"
+}
+
+
+### 3. VENTAS
+# 3.1. Crear pedido 1
+POST http://localhost:3000/ventas/api
+Content-Type: application/json
+
+{
+  "clienteId": 1,
+  "observaciones": "Entregar martes por la mañana",
+  "items": [
+    { "productoId": 1, "cantidad": 20, "precioUnitario": 850 },
+    { "productoId": 2, "cantidad": 10, "precioUnitario": 620 }
+  ]
+}
+
+### 3.2. Crear pedido 2
+POST http://localhost:3000/ventas/api
+Content-Type: application/json
+
+{
+  "clienteId": 2,
+  "items": [
+    { "productoId": 1, "cantidad": 50, "precioUnitario": 850 },
+    { "productoId": 3, "cantidad": 15, "precioUnitario": 1200 }
+  ]
+}
+
+### 3.3. Listar todos los pedidos
+GET http://localhost:3000/ventas/api
+
+### 3.4. Filtrar pedidos por cliente
+GET http://localhost:3000/ventas/api?clienteId=1
+
+### 3.5. Obtener un pedido específico
+GET http://localhost:3000/ventas/api/1
+
+### 3.6. Despachar pedido 1
+PATCH http://localhost:3000/ventas/api/1/despachar
+
+### 3.7. ERROR: Intentar despachar de nuevo
+PATCH http://localhost:3000/ventas/api/1/despachar
+
+### 3.8. Cancelar pedido 2
+PATCH http://localhost:3000/ventas/api/2/cancelar
+
+### 3.9. ERROR: Intentar cancelar pedido ya despachado
+PATCH http://localhost:3000/ventas/api/1/cancelar
+

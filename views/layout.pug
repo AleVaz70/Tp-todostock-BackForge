@@ -1,0 +1,37 @@
+//- layout.pug es la plantilla base que todas las vistas extienden.
+//- Define la estructura HTML común (head, nav, footer) para no repetirla
+//- en cada vista. El bloque "contenido" es el espacio que cada vista rellena.
+html
+  head
+    meta(charset='UTF-8')
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+    title= titulo + ' | TodoStock'
+    style.
+      body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
+      nav { background: #2c3e50; padding: 1rem 2rem; }
+      nav a { color: white; text-decoration: none; margin-right: 1.5rem; font-weight: bold; }
+      nav a:hover { text-decoration: underline; }
+      main { max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
+      table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
+      th { background: #2c3e50; color: white; padding: 0.75rem 1rem; text-align: left; }
+      td { padding: 0.75rem 1rem; border-bottom: 1px solid #eee; }
+      tr:last-child td { border-bottom: none; }
+      .badge { padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.85rem; font-weight: bold; }
+      .activo   { background: #d4edda; color: #155724; }
+      .inactivo { background: #f8d7da; color: #721c24; }
+      .pendiente   { background: #fff3cd; color: #856404; }
+      .despachado  { background: #d4edda; color: #155724; }
+      .cancelado   { background: #f8d7da; color: #721c24; }
+      .alerta { background: #fff3cd; border-left: 4px solid #ffc107; padding: 1rem; margin-bottom: 1rem; border-radius: 4px; }
+      h1 { color: #2c3e50; }
+  body
+    nav
+      a(href='/productos') Productos
+      a(href='/clientes') Clientes
+      a(href='/ventas') Ventas
+    main
+      //- block contenido es el espacio reservado que cada vista rellena.
+      //- Una vista que extienda este layout puede poner su HTML acá.
+      block contenido
+    footer
+      p(style='text-align:center; color:#999; margin-top:3rem;') TodoStock S.A. — Sistema de Gestión
