@@ -107,14 +107,14 @@ Motor de Plantillas: Pug (Server-Side Rendering integrado)
 Configuración: Dotenv (Variables de entorno)
 
 Bibliografía Utilizada
-### 📚 Documentación Oficial de Tecnologías
+### Documentación Oficial de Tecnologías
 
 * **[Node.js Core Documentation](https://nodejs.org/docs/) (v18 LTS / v20 LTS):** Referencia para módulos nativos, asincronismo y manejo de flujos en el entorno de ejecución.
 * **[Express.js Framework](https://expressjs.com/):** Guía oficial para ruteo modular, controladores, ciclo de vida de peticiones (`req`, `res`) y diseño de middlewares globales de manejo de errores.
 * **[Mongoose ODM Documentation](https://mongoosejs.com/docs/):** Documentación técnica de referencia para la declaración de *Schemas*, tipos de datos, restricciones (`required`, `unique`), métodos de persistencia (`.save()`, `findByIdAndUpdate()`, `findByIdAndDelete()`) y vinculación documental (`.populate()`).
 * **[Pug Template Engine](https://pugjs.org/):** Guía de referencia sintáctica para la herencia de plantillas (`extends`, `block`), renderizado de datos del lado del servidor (*Server-Side Rendering*) e iteración de colecciones NoSQL (`each...in`).
 
-### 🎓 Apuntes Teóricos de la Cátedra (IFTS N° 29)
+### Apuntes Teóricos de la Cátedra (IFTS N° 29)
 
 * **Bloque 7.1 — Introducción a MongoDB:** Conceptos fundamentales de bases de datos NoSQL orientadas a documentos, equivalencias relacionales (SQL vs. NoSQL) e integración nativa con JavaScript.
 * **Bloque 7.2 — Operadores de elementos y Schemas en MongoDB:** Reglas de validación estructural antes de la persistencia y control de consistencia de datos en operaciones CRUD.
