@@ -1,0 +1,30 @@
+extends ../layout
+
+block contenido
+  h1= titulo
+  p(style="color: #666; margin-bottom: 2rem;") Historial de pedidos y estado de despacho financiero del canal mayorista.
+
+  table
+    thead
+      tr
+        th ID Pedido
+        th Cliente
+        th CUIT
+        th Fecha Alta
+        th Estado
+    tbody
+      if pedidos.length === 0
+        tr
+          td(colspan="5" style="text-align:center; padding: 2rem; color: #999;") No hay pedidos de venta registrados en el sistema.
+      else
+        each pedido in pedidos
+          tr
+            td
+              span(style="font-family: monospace; background: #eef2f5; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem; color: #7f8c8d;")= pedido._id.toString().substring(18) + '...'
+            td(style="font-weight: bold; color: #2c3e50;")= pedido.clienteId ? pedido.clienteId.nombre : 'Cliente no asignado'
+            td(style="font-family: monospace; color: #555;")= pedido.clienteId ? pedido.clienteId.cuit : '-'
+            td
+              //- Procesamos la fecha de creación de forma limpia en formato DD/MM/YYYY
+              span(style="font-family: monospace; font-weight: bold; color: #34495e;")= new Date(pedido.createdAt).toISOString().split('T')[0].split('-').reverse().join('/')
+            td
+              span(class=`badge ${pedido.estado}`)= pedido.estado

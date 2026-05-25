@@ -1,0 +1,27 @@
+extends ../layout
+
+block contenido
+  h1= titulo
+  p(style="color: #666; margin-bottom: 2rem;") Control físico de mercadería en depósito ordenado por criterio de vencimiento (FEFO).
+
+  table
+    thead
+      tr
+        th Producto
+        th Número Lote
+        th Cantidad Disponible
+        th Fecha Vencimiento
+    tbody
+      if lotes.length === 0
+        tr
+          td(colspan="4" style="text-align:center; padding: 2rem; color: #999;") El depósito se encuentra vacío. Ingrese lotes de mercadería.
+      else
+        each lote in lotes
+          tr
+            td(style="font-weight: bold; color: #2c3e50;")= lote.productoId ? lote.productoId.nombre : 'Producto Inexistente'
+            td
+              span(style="font-family: monospace; background: #eef2f5; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9rem;")= lote.numeroLote
+            td(style="font-weight: bold; color: #2980b9;")= lote.cantidadActual
+            td
+              //- Cortamos la fecha para que muestre solo YYYY-MM-DD de forma limpia
+              span(style="font-family: monospace; font-weight: bold; color: #c0392b;")= new Date(lote.fechaVencimiento).toISOString().split('T')[0].split('-').reverse().join('/')

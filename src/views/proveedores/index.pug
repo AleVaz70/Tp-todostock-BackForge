@@ -1,0 +1,25 @@
+extends ../layout
+
+block contenido
+  h1= titulo
+  p(style="color: #666; margin-bottom: 2rem;") Registro centralizado de fabricantes, distribuidores y laboratorios de abastecimiento mayorista.
+
+  table
+    thead
+      tr
+        th Nombre / Razón Social
+        th CUIT
+        th Contacto / Email
+        th Plazo de Entrega
+    tbody
+      if proveedores.length === 0
+        tr
+          td(colspan="4" style="text-align:center; padding: 2rem; color: #999;") No hay proveedores registrados en el sistema.
+      else
+        each prov in proveedores
+          tr
+            td(style="font-weight: bold; color: #2c3e50;")= prov.nombre
+            td(style="font-family: monospace; color: #555;")= prov.cuit
+            td(style="color: #2980b9;")= prov.contacto || 'Sin correo'
+            td
+              span(style="font-family: monospace; background: #eef2f5; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9rem; font-weight: bold; color: #e67e22;")= `${prov.plazoEntregaDias || 7} días`

@@ -1,0 +1,26 @@
+extends ../layout
+
+block contenido
+  h1= titulo
+  p(style="color: #666; margin-bottom: 2rem;") Panel histórico de abastecimiento mayorista y estado de órdenes a proveedores.
+
+  table
+    thead
+      tr
+        th ID Orden
+        th Proveedor
+        th Total
+        th Estado
+    tbody
+      if compras.length === 0
+        tr
+          td(colspan="4" style="text-align:center; padding: 2rem; color: #999;") No hay órdenes de compra registradas en el sistema.
+      else
+        each compra in compras
+          tr
+            td
+              span(style="font-family: monospace; background: #eef2f5; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem; color: #7f8c8d;")= compra._id.toString().substring(18) + '...'
+            td(style="font-weight: bold; color: #2c3e50;")= compra.proveedorId ? compra.proveedorId.nombre : 'Proveedor no asignado'
+            td(style="font-weight: bold; color: #27ae60;") $#{compra.total.toLocaleString('es-AR')}
+            td
+              span(class=`badge ${compra.estado}`)= compra.estado

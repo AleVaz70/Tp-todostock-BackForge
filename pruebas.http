@@ -1,0 +1,171 @@
+### ==============================================================================
+### TODOSTOCK S.A. - PLAN DE PRUEBAS AUTOMÁTICO (NATIVO REST CLIENT)
+### ==============================================================================
+@baseUrl = http://localhost:3000
+
+### ──────────────────────────────────────────────────────────────────────────────
+### VARIABLES FIJAS (PROVENIENTES DEL SEED)
+### ──────────────────────────────────────────────────────────────────────────────
+@proveedorId = 6a0a96163559573d57975624
+@clienteId = 6a0a966b3559573d57975626
+@productoId = 6a0a97033559573d57975629
+
+### VARIABLES AUTOMÁTICAS (Capturan el ID de la respuesta del POST de abajo)
+@ordenCompraId = {{crearCompra.response.body._id}}
+@pedidoVentaId = {{crearPedido.response.body._id}}
+
+
+### ──────────────────────────────────────────────────────────────────────────────
+### MÓDULO 1: GESTIÓN DE CATÁLOGOS (ALTAS Y BLOQUEOS)
+### ──────────────────────────────────────────────────────────────────────────────
+
+### 1.1 Crear un Proveedor Nuevo
+POST {{baseUrl}}/api/proveedores
+Content-Type: application/json
+
+{
+  "nombre": "Química del Litoral S.A.",
+  "cuit": "30-11111111-9",
+  "direccion": "Av. Circunvalación 4500, Rosario",
+  "telefono": "0341-4555555",
+  "rubro": "Limpieza Industrial"
+}
+
+### 1.2 Crear un Cliente Nuevo con Límite de Crédito ($50.000)
+POST {{baseUrl}}/api/clientes
+Content-Type: application/json
+
+{
+  "nombre": "Distribuidora Don Roberto",
+  "cuit": "20-22222222-7",
+  "direccion": "Calle Falsa 123, Cañada de Gómez",
+  "limiteCredito": 50000,
+  "saldo": 0
+}
+
+### 1.3 Modificar Datos de un Cliente
+PUT {{baseUrl}}/api/clientes/{{clienteId}}
+Content-Type: application/json
+
+{
+  "nombre": "Almacén El Progreso Modificado",
+  "cuit": "20-12345678-9",
+  "limiteCredito": 120000,
+  "diasPlazo": 45
+}
+
+### 1.4 Bloquear Financieramente a un Cliente
+PATCH {{baseUrl}}/api/clientes/{{clienteId}}/bloquear
+
+### 1.5 Desbloquear Financieramente a un Cliente
+PATCH {{baseUrl}}/api/clientes/{{clienteId}}/desbloquear
+
+### 1.6 Crear un Producto Nuevo en el Catálogo
+POST {{baseUrl}}/api/productos
+Content-Type: application/json
+
+{
+  "nombre": "Detergente Industrial 5L",
+  "codigoSKU": "DET-IND-05L",
+  "precio": 500,
+  "unidad": "Bidón",
+  "categoria": "Limpieza",
+  "stockMinimo": 20
+}
+
+
+### ──────────────────────────────────────────────────────────────────────────────
+### MÓDULO 2: ABASTECIMIENTO Y GESTIÓN DE LOTES
+### ──────────────────────────────────────────────────────────────────────────────
+
+### 2.1 Generar Orden de Compra (Estado Inicial: Pendiente)
+# @name crearCompra
+POST {{baseUrl}}/api/compras
+Content-Type: application/json
+
+{
+  "proveedorId": "{{proveedorId}}",
+  "items": [
+    {
+      "productoId": "{{productoId}}",
+      "cantidad": 200,
+      "precioUnitario": 1000
+    }
+  ],
+  "observaciones": "Compra mayorista de 200 unidades de Lavandina 5L para stock"
+}
+
+### 2.2 Aprobar Orden de Compra (Se resuelve solo al ejecutar la petición 2.1)
+PATCH {{baseUrl}}/api/compras/{{ordenCompraId}}/aprobar
+
+### 2.3 Recibir Orden de Compra (Habilita el ingreso físico al depósito)
+PATCH {{baseUrl}}/api/compras/{{ordenCompraId}}/recibir
+
+### 2.4 Ingresar Lote A - Vencimiento Cercano (Para auditar algoritmo FEFO posterior)
+POST {{baseUrl}}/api/inventario/lotes
+Content-Type: application/json
+
+{
+  "productoId": "{{productoId}}",
+  "numeroLote": "LOTE-A-PROXIMO",
+  "cantidadInicial": 100,
+  "cantidadActual": 100,
+  "fechaVencimiento": "2026-06-30"
+}
+
+### 2.5 Ingresar Lote B - Vencimiento Lejano
+POST {{baseUrl}}/api/inventario/lotes
+Content-Type: application/json
+
+{
+  "productoId": "{{productoId}}",
+  "numeroLote": "LOTE-B-LEJANO",
+  "cantidadInicial": 75,
+  "cantidadActual": 75,
+  "fechaVencimiento": "2027-12-01"
+}
+
+
+### ──────────────────────────────────────────────────────────────────────────────
+### MÓDULO 3: VENTAS Y REGLAS DE CONTROL CRÍTICAS
+### ──────────────────────────────────────────────────────────────────────────────
+
+### 3.1 CONTROL FINANCIERO: Venta Excedida (Debe retornar 400 Bad Request)
+# 110 unidades x $1450 = $159.500 (Supera el límite de crédito asignado de $150.000)
+POST {{baseUrl}}/api/ventas
+Content-Type: application/json
+
+{
+  "clienteId": "{{clienteId}}",
+  "items": [
+    {
+      "productoId": "{{productoId}}",
+      "cantidad": 110,
+      "precioUnitario": 1450
+    }
+  ],
+  "observaciones": "Intento de forzar compra por encima del riesgo permitido"
+}
+
+### 3.2 Crear Pedido Autorizado (Dentro del margen de cuenta corriente)
+# @name crearPedido
+POST {{baseUrl}}/api/ventas
+Content-Type: application/json
+
+{
+  "clienteId": "{{clienteId}}",
+  "items": [
+    {
+      "productoId": "{{productoId}}",
+      "cantidad": 50,
+      "precioUnitario": 1450
+    }
+  ],
+  "observaciones": "Pedido mayorista autorizado"
+}
+
+### 3.3 ALGORITMO FEFO: Despachar Pedido Autorizado (Se resuelve solo al ejecutar la 3.2)
+PATCH {{baseUrl}}/api/ventas/{{pedidoVentaId}}/despachar
+
+### 3.4 Cancelar un Pedido de Venta
+PATCH {{baseUrl}}/api/ventas/{{pedidoVentaId}}/cancelar
