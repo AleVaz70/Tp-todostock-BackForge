@@ -138,11 +138,13 @@ Reconstruya los módulos e indexe las dependencias huérfanas de compilación de
 npm install
 
 2. Configurar el archivo de Variables de Entorno
-Cree un archivo llamado exactamente .env en la raíz del proyecto (a la altura de src e index.js) e inserte las credenciales de conexión del Cluster Cloud de Atlas provistas por el grupo:
 
+Cree un archivo llamado exactamente `.env` en la raíz del proyecto (a la altura de `src` e `index.js`) e inserte la estructura de conexión del Cluster Cloud de Atlas provista por el grupo:
+
+```env
 PORT=3000
 NODE_ENV=development
-MONGO_URI=mongodb+srv://TodoStock2026:TodoStock2026@cluster0.cvkwpav.mongodb.net/todostock?retryWrites=true&w=majority&appName=Cluster0
+MONGO_URI=mongodb+srv://To.... (Nota: Reemplace con la dirección completa provista en la entrega de Google Drive)
 
 
 3. Poblar la Base de Datos Cloud en la Nube (Obligatorio)
