@@ -1,0 +1,267 @@
+extends ../layout
+
+block contenido
+  
+  p(style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;")
+    i.fa-solid.fa-truck-ramp-box
+    |   Módulo de Abastecimiento Logístico. Genere órdenes de compra para reponer el stock crítico mediante el ingreso controlado de lotes FEFO
+  //- PANEL DE ALTA DE NUEVA ORDEN DE COMPRA
+  .panel-alta
+    h3(style="font-size: 15px; font-weight: 700; color: #1e293b; margin: 0; display: inline-flex; align-items: center; gap: 8px;")
+      i.fa-solid.fa-cart-plus(style="color: #3b82f6;")
+      |   Confeccionar Nueva Orden de Compra / Reposición
+    
+    form#formNuevaCompra(style="margin-top: 12px;")
+      .form-grid
+        .form-group(style="flex: 2;")
+          label Seleccionar Proveedor
+          select#proveedorSelect.form-control(name="proveedorId" required)
+            option(value="") -- Seleccione un proveedor activo --
+            each prov in proveedores
+              option(value=prov._id) #{prov.nombre} (CUIT: #{prov.cuit || '—'})
+
+      //- Sub-Grid para añadir artículos al pedido temporal de compra
+      .form-grid(style="margin-top: 15px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;")
+        .form-group(style="flex: 2;")
+          label Artículo a Reponer
+          select#productoSelect.form-control
+            option(value="") -- Seleccione artículo del catálogo --
+            each prod in productos
+              option(value=prod._id data-nombre=prod.nombre) #{prod.nombre} [SKU: #{prod.codigoSKU}] — (Costo actual: $#{prod.precio})
+        
+        .form-group
+          label Cantidad u.
+          input#cantidadInput.form-control(type="number" min="1" placeholder="Ej: 100")
+        
+        .form-group
+          label Costo Unitario ($)
+          input#costoInput.form-control(type="number" min="0" step="0.01" placeholder="Ej: 450.50")
+        
+        .form-group(style="justify-content: flex-end;")
+          button#btnAgregarItemCompra.btn-guardar(type="button" style="margin-top: 0; background: #475569;")
+            i.fa-solid.fa-plus
+            |   Añadir
+
+      //- Tabla interna temporal
+      div(style="margin-top: 15px;")
+        table#tablaTemporalCompra(style="width: 100%; font-size: 13px; text-align: left; border-collapse: collapse;")
+          thead
+            tr(style="border-bottom: 2px solid #cbd5e1; color: #475569;")
+              th Detalle Artículo
+              th Cantidad
+              th Costo Pactado
+              th Subtotal
+              th Acciones
+          tbody
+            tr#filaVaciaCompra
+              td(colspan="5" style="padding: 10px; text-align: center; color: #94a3b8;") No hay ítems precargados en la orden de reposición.
+
+      button.btn-guardar(type="submit" style="background: #3b82f6; margin-top: 20px; width: 100%;")
+        i.fa-solid.fa-file-signature
+        |   Emitir y Registrar Orden de Compra Pendiente
+
+  //- TABLA LOGÍSTICA DE SEGUIMIENTO REPARADA
+  .table-container(style="margin-top: 30px;")
+    table.data-table
+      thead
+        tr
+          th Fecha Emisión
+          th Proveedor
+          th Detalle del Pedido (Abastecimiento)
+          th Total Costo Inversión
+          th Estado
+          th(style="text-align: center;") Flujo Operativo
+      tbody
+        if !ordenes || ordenes.length === 0
+          tr
+            td(colspan="6" style="text-align: center; padding: 25px; color: var(--text-muted);") No se han emitido órdenes de compra en este período.
+        else
+          each ord in ordenes
+            tr
+              //- 1. Fecha Emisión
+              td #{new Date(ord.createdAt).toLocaleDateString('es-AR')}
+              
+              //- 2. Proveedor
+              td(style="font-weight: 600;") #{ord.proveedorId ? ord.proveedorId.nombre : 'Proveedor Inactivo'}
+              
+              //- 3. Detalle del Pedido
+              td
+                if ord.items && ord.items.length > 0
+                  each item in ord.items
+                    span(style="display: block; font-size: 13px; color: #475569;") 
+                      if item.productoId && item.productoId.nombre
+                        | • #{item.productoId.nombre} x #{item.cantidad} u. (Costo: $#{item.precioUnitario}/u)
+                      else if item.productoId
+                        | • Artículo ID: #{item.productoId} x #{item.cantidad} u. (Costo: $#{item.precioUnitario}/u)
+                      else
+                        | • Artículo indeterminado x #{item.cantidad} u. (Costo: $#{item.precioUnitario}/u)
+                else
+                  span(style="color: #94a3b8;") Sin ítems especificados
+              
+              //- 4. Total Costo Inversión
+              td(style="font-weight: 700; color: #b45309;") $#{(ord.total || 0).toLocaleString('es-AR')}
+              
+              //- 5. Estado
+              td
+                span(class=`badge-estado est-${ord.estado || 'pendiente'}` style="font-weight: 600; text-transform: uppercase;") #{ord.estado || 'pendiente'}
+              
+              //- 6. Flujo Operativo
+              td(style="text-align: center;")
+                if ord.estado === 'pendiente'
+                  button(style="background: #0ea5e9; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;" type="button" onclick=`avanzarOrden('${ord._id}', 'aprobar')`)
+                    i.fa-solid.fa-thumbs-up
+                    |   Autorizar
+                else if ord.estado === 'aprobada'
+                  button(style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;" type="button" onclick=`avanzarOrden('${ord._id}', 'recibir')`)
+                    i.fa-solid.fa-boxes-ramp
+                    |   Recibir Mercadería
+                else
+                  span(style="color: #166534; font-size: 12px; font-weight: 600; background: #dcfce7; padding: 4px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;") 
+                    i.fa-solid.fa-circle-check
+                    |   Productos Recibidos [En Depósito]
+
+  //- SCRIPT DE INTERACCIÓN LOGÍSTICA
+  script.
+    let itemsCompra = [];
+    
+    const btnAgregar = document.getElementById('btnAgregarItemCompra');
+    if (btnAgregar) {
+      btnAgregar.addEventListener('click', () => {
+        const prodSelect = document.getElementById('productoSelect');
+        const cantInput = document.getElementById('cantidadInput');
+        const costoInput = document.getElementById('costoInput');
+
+        const productoId = prodSelect.value;
+        const optionSel = prodSelect.options[prodSelect.selectedIndex];
+        const productoNombre = optionSel ? optionSel.getAttribute('data-nombre') : '';
+        const cantidad = parseInt(cantInput.value);
+        const precioUnitario = parseFloat(costoInput.value);
+
+        if (!productoId || isNaN(cantidad) || cantidad <= 0 || isNaN(precioUnitario) || precioUnitario < 0) {
+          alert('Complete el artículo, una cantidad mayor a 0 y un costo válido.');
+          return;
+        }
+
+        const existe = itemsCompra.find(i => i.productoId === productoId);
+        if (existe) {
+          alert('Este artículo ya fue añadido. Si desea cambiar la cantidad, remúevalo y vuélvalo a ingresar.');
+          return;
+        } else {
+          itemsCompra.push({ productoId, productoNombre, cantidad, precioUnitario });
+        }
+
+        renderTablaTemporalCompra();
+        cantInput.value = '';
+        costoInput.value = '';
+        prodSelect.value = '';
+      });
+    }
+
+    function renderTablaTemporalCompra() {
+      const tbody = document.querySelector('#tablaTemporalCompra tbody');
+      tbody.innerHTML = '';
+
+      if (itemsCompra.length === 0) {
+        tbody.innerHTML = '<tr id="filaVaciaCompra"><td colspan="5" style="padding: 10px; text-align: center; color: #94a3b8;">No hay ítems precargados en la orden de reposición.</td></tr>';
+        return;
+      }
+
+      itemsCompra.forEach((item, index) => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #f1f5f9';
+        const subtotal = item.cantidad * item.precioUnitario;
+        
+        // Armado de strings clásico para evitar fallos de escape en Pug
+        let html = '';
+        html += '<td style="padding: 8px 0; font-weight: 600;">' + item.productoNombre + '</td>';
+        html += '<td style="padding: 8px 0;">' + item.cantidad + ' u.</td>';
+        html += '<td style="padding: 8px 0;">$' + item.precioUnitario.toFixed(2) + '</td>';
+        html += '<td style="padding: 8px 0; font-weight: 600; color: #b45309;">$' + subtotal.toFixed(2) + '</td>';
+        html += '<td style="padding: 8px 0;"><button type="button" style="background:none; border:none; color:#ef4444; cursor:pointer;" onclick="removerItemCompra(' + index + ')"><i class="fa-solid fa-trash-can"></i></button></td>';
+        
+        tr.innerHTML = html;
+        tbody.appendChild(tr);
+      });
+    }
+
+    window.removerItemCompra = function(index) {
+      itemsCompra.splice(index, 1);
+      renderTablaTemporalCompra();
+    };
+
+    const formCompra = document.getElementById('formNuevaCompra');
+    if (formCompra) {
+      formCompra.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const proveedorId = document.getElementById('proveedorSelect').value;
+
+        if (itemsCompra.length === 0) {
+          alert('La orden debe contener al menos 1 ítem antes de registrarse.');
+          return;
+        }
+
+        // CORRECCIÓN CRÍTICA: Mapeamos el array temporal asegurando que viaje 'productoId' tal cual lo pide Mongoose
+        const bodyData = {
+          proveedorId,
+          items: itemsCompra.map(i => ({
+            productoId: i.productoId, // ← Mapeo idéntico al esquema de la BD
+            cantidad: i.cantidad,
+            precioUnitario: i.precioUnitario
+          })),
+          observaciones: 'Reposición de stock solicitada desde el Panel de Abastecimiento'
+        };
+
+        try {
+          const res = await fetch('/api/compras', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(bodyData)
+          });
+
+          const data = await res.json();
+
+          if (res.ok) {
+            alert('¡Orden de compra generada con éxito en estado Pendiente!');
+            window.location.reload();
+          } else {
+            alert('Error: ' + (data.error || 'No se pudo emitir la orden de compra'));
+          }
+        } catch (err) {
+          alert('Error de red al conectar con el servidor.');
+        }
+      });
+    }
+
+    window.avanzarOrden = async function(ordenId, accion) {
+      let url = '';
+      let mensajeConfirmacion = '';
+      
+      if (accion === 'aprobar') {
+        url = '/api/compras/' + ordenId + '/aprobar';
+        mensajeConfirmacion = '¿Desea autorizar y aprobar formalmente esta orden de compra?';
+      } else if (accion === 'recibir') {
+        url = '/api/compras/' + ordenId + '/recibir';
+        mensajeConfirmacion = '¿Confirmar el ingreso físico de la mercadería al depósito de la distribuidora?';
+      }
+
+      if (!confirm(mensajeConfirmacion)) return;
+
+      try {
+        const res = await fetch(url, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          alert('Operación exitosa: ' + data.mensaje);
+          window.location.reload();
+        } else {
+          alert('Error: ' + (data.error || 'No se pudo procesar la acción'));
+        }
+      } catch (err) {
+        console.error('Error en flujo operativo:', err);
+        alert('Hubo un error de red al intentar procesar el cambio de estado.');
+      }
+    };

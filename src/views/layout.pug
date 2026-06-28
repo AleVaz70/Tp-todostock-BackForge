@@ -1,0 +1,227 @@
+doctype html
+html(lang="es")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title TodoStock S.A. - Control de Gestión
+    link(rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap")
+    link(rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css")
+    link(rel="stylesheet", href="/css/estilos_paneles.css")
+    style.
+      :root {
+        --sidebar-bg: #0f172a;
+        --sidebar-hover: #1e293b;
+        --sidebar-active: #38bdf8;
+        --bg-main: #f8fafc;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --border-color: #e2e8f0;
+      }
+      body {
+        margin: 0;
+        font-family: 'Inter', sans-serif;
+        background-color: var(--bg-main);
+        color: var(--text-main);
+        display: flex;
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+      }
+      .sidebar {
+        width: 260px;
+        background-color: var(--sidebar-bg);
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 100;
+        box-shadow: 4px 0 20px rgba(15, 23, 42, 0.08);
+      }
+      .sidebar-brand {
+        padding: 24px;
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #38bdf8;   
+      }
+      .sidebar-menu {
+        list-style: none;
+        padding: 20px 0;
+        margin: 0;
+        flex-grow: 1;
+      }
+      .sidebar-item {
+        margin: 4px 14px;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .sidebar-item a {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        color: #94a3b8;
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 14px;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .sidebar-item a i {
+        font-size: 16px;
+        width: 20px;
+        text-align: center;
+        transition: transform 0.2s;
+      }
+      .sidebar-item a:hover {
+        background-color: var(--sidebar-hover);
+        color: #fff;
+      }
+      .sidebar-item a:hover i {
+        transform: translateX(2px);
+      }
+      .sidebar-item.active {
+        background-color: rgba(56, 189, 248, 0.1);
+      }
+      .sidebar-item.active a {
+        color: var(--sidebar-active);
+        font-weight: 600;
+      }
+      .sidebar-footer {
+        padding: 20px 24px;
+        border-top: 1px solid rgba(255,255,255,0.06);
+        background-color: rgba(0,0,0,0.15);
+      }
+      .user-info {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #f1f5f9;
+      }
+      .user-role {
+        font-size: 11px;
+        color: #64748b;
+        margin-bottom: 16px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .btn-logout {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: rgba(239, 68, 68, 0.1);
+        color: #f87171;
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        padding: 10px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+        box-sizing: border-box;
+        transition: all 0.2s;
+      }
+      .btn-logout:hover {
+        background: #ef4444;
+        color: white;
+        border-color: #ef4444;
+      }
+      .main-content {
+        margin-left: 260px;
+        flex-grow: 1;
+        padding: 44px 50px;
+        box-sizing: border-box;
+      }
+  body
+    nav.sidebar
+      .sidebar-brand
+        i.fa-solid.fa-circle-nodes(style="font-size: 22px; color: #38bdf8;")
+        span TodoStock S.A.
+      ul.sidebar-menu
+        li.sidebar-item(class=title==='Inicio'?'active':'')
+          a(href="/inicio")
+            i.fa-solid.fa-chart-pie
+            span Inicio
+
+        li.sidebar-item(class=title==='Productos'?'active':'')
+          a(href="/productos")
+            i.fa-solid.fa-box
+            span Productos
+
+        if usuario && (usuario.role === 'Administrador' || usuario.role === 'Compras' || usuario.rol === 'Administrador' || usuario.rol === 'Compras')
+          li.sidebar-item(class=title==='Inventario'?'active':'')
+            a(href="/inventario")
+              i.fa-solid.fa-warehouse
+              span Stock y Alertas (FEFO)
+          li.sidebar-item(class=title==='Compras'?'active':'')
+            a(href="/compras")
+              i.fa-solid.fa-file-invoice-dollar
+              span Órdenes de Compra
+          li.sidebar-item(class=title==='Proveedores'?'active':'')
+            a(href="/proveedores")
+              i.fa-solid.fa-truck-field
+              span Proveedores
+
+        if usuario && (usuario.role === 'Administrador' || usuario.role === 'Vendedor' || usuario.rol === 'Administrador' || usuario.rol === 'Vendedor')
+          li.sidebar-item(class=title==='Ventas'?'active':'')
+            a(href="/ventas")
+              i.fa-solid.fa-cart-shopping
+              span Ventas / Pedidos
+          li.sidebar-item(class=title==='Clientes'?'active':'')
+            a(href="/clientes")
+              i.fa-solid.fa-users
+              span Clientes
+
+      .sidebar-footer
+        if usuario && usuario.nombre
+          .user-info
+            i.fa-solid.fa-circle-user(style="color: #10b981;")
+            span #{usuario.nombre}
+          .user-role Rol: #{usuario.rol || usuario.role}
+        else
+          .user-info
+            i.fa-solid.fa-circle-user(style="color: #64748b;")
+            span Operador Sistema
+          .user-role Sesión Protegida JWT
+        button#btn-cerrar-sesion.btn-logout(type="button")
+          i.fa-solid.fa-right-from-bracket
+          span Cerrar Sesión
+
+    main.main-content
+      div(style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 36px; border-bottom: 1px solid var(--border-color); padding-bottom: 24px;")
+        div
+          h1(style="margin: 0; font-size: 26px; font-weight: 700; color: #0f172a; letter-spacing: -0.5px;") #{titulo}
+          p(style="margin: 6px 0 0 0; font-size: 13px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;") Ecosistema Digital TodoStock S.A.
+        if title !== 'Inicio'
+          a(href="/inicio" style="display: inline-flex; align-items: center; gap: 8px; background: white; border: 1px solid #e2e8f0; color: #1e293b; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.02); transition: all 0.2s;")
+            i.fa-solid.fa-arrow-left-long(style="color: #3b82f6;")
+            span Volver al Panel
+            
+      block contenido
+
+    script.
+      const botonLogout = document.getElementById('btn-cerrar-sesion');
+      if (botonLogout) {
+        botonLogout.addEventListener('click', async () => {
+          try {
+            const respuesta = await fetch('/api/auth/logout', { method: 'GET' });
+            if (respuesta.ok) {
+              window.location.href = '/login';
+            } else {
+              alert('No se pudo cerrar la sesión');
+            }
+          } catch (error) {
+            console.error('Error en el logout:', error);
+          }
+        });
+      }

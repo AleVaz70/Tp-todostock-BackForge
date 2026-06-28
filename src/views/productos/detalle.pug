@@ -1,0 +1,36 @@
+//- Vista de detalle de un producto individual.
+//- Se accede desde /productos/:id/ver
+extends ../layout
+
+block contenido
+  h1= producto.nombre
+
+  table
+    tr
+      th ID
+      td= producto.id
+    tr
+      th Código SKU
+      td= producto.codigoSKU || '—'
+    tr
+      th Descripción
+      td= producto.descripcion || '—'
+    tr
+      th Categoría
+      td= producto.categoria
+    tr
+      th Unidad
+      td= producto.unidad
+    tr
+      th Precio
+      td $#{producto.precio}
+    tr
+      th Stock mínimo
+      td= producto.stockMinimo
+    tr
+      th Fecha de alta
+      td= producto.fechaCreacion
+
+  p
+    a(href='/productos') ← Volver al catálogo
+          

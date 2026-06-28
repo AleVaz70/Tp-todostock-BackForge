@@ -1,0 +1,250 @@
+extends ../layout
+
+block contenido
+  p(style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;")
+    i.fa-solid.fa-cart-shopping
+    |  Módulo de Facturación y Despacho. Seleccione los artículos del catálogo mayorista vigentes para confeccionar el pedido del cliente.
+
+  //- PANEL DE CARGA DE NUEVA VENTA
+  .panel-alta
+    h3(style="font-size: 15px; font-weight: 700; color: #1e293b; margin: 0; display: inline-flex; align-items: center; gap: 8px;")
+      i.fa-solid.fa-file-invoice-dollar(style="color: #10b981;")
+      | Confeccionar Nueva Orden de Venta
+    
+    form#formNuevaVenta(style="margin-top: 12px;")
+      .form-grid
+        .form-group(style="flex: 2;")
+          label Cliente / Cuenta Corriente
+          select#clienteSelect.form-control(name="clienteId" required)
+            option(value="") -- Seleccione un cliente activo --
+            each cl in clientes
+              option(value=cl._id) #{cl.nombre} (Dispo: $#{(cl.limiteCredito - (cl.saldo || 0)).toLocaleString('es-AR')})
+
+      //- Sub-Grid para ir añadiendo artículos al pedido temporal
+      .form-grid(style="margin-top: 15px; background: #ffffff; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;")
+        .form-group(style="flex: 2;")
+          label Artículo
+          select#productoSelect.form-control
+            option(value="") -- Seleccione artículo --
+            each prod in productos
+              option(value=prod._id data-precio=prod.precio) #{prod.nombre} [SKU: #{prod.codigoSKU}] - Precio Lista: $#{(prod.precio * 1.40).toFixed(2)}
+        
+        .form-group
+          label Cantidad u.
+          input#cantidadInput.form-control(type="number" min="1" placeholder="Ej: 10")
+        
+        .form-group(style="justify-content: flex-end;")
+          button#btnAgregarItem.btn-guardar(type="button" style="margin-top: 0; background: #475569;")
+            i.fa-solid.fa-plus
+            |  Añadir Item
+
+      //- Tabla interna para ver lo que se va a vender antes de guardarlo en Atlas
+      div(style="margin-top: 15px;")
+        table#tablaTemporalItems(style="width: 100%; font-size: 13px; text-align: left; border-collapse: collapse;")
+          thead
+            tr(style="border-bottom: 2px solid #cbd5e1; color: #475569;")
+              th Detalle Artículo
+              th Cantidad
+              th Precio Mayorista (+40%)
+              th Acciones
+          tbody
+            tr#filaVacia
+              td(colspan="4" style="padding: 10px; text-align: center; color: #94a3b8;") No se agregaron artículos al pedido aún.
+
+      button.btn-guardar(type="submit" style="background: #10b981; margin-top: 20px; width: 100%;")
+        i.fa-solid.fa-share-from-square
+        |  Registrar y Emitir Comprobante de Venta
+
+  //- TABLA HISTÓRICA DE PEDIDOS Y DOCUMENTOS DE LOGÍSTICA
+  if pedidos.length === 0
+    .alerta(style="margin-top: 24px;") No hay pedidos de venta registrados en el sistema.
+  else
+    .table-container(style="margin-top: 24px;")
+      table.data-table
+        thead
+          tr
+            th <i class="fa-solid fa-hashtag"></i> ID Pedido
+            th <i class="fa-solid fa-user"></i> Cliente Solicitante
+            th <i class="fa-solid fa-address-card"></i> CUIT
+            th <i class="fa-solid fa-calendar"></i> Fecha Alta
+            th <i class="fa-solid fa-circle-notch"></i> Estado Logístico
+            th(style="text-align: center;") <i class="fa-solid fa-gears"></i> Acción FEFO
+        tbody
+          each pedido in pedidos
+            tr
+              td
+                span.id-badge ##{pedido._id.toString().substring(18).toUpperCase()}
+              td(style="font-weight: 600; color: var(--text-main);") #{pedido.clienteId ? pedido.clienteId.nombre : 'Cliente General'}
+              td
+                span.cuit-badge #{pedido.clienteId ? pedido.clienteId.cuit : '—'}
+              td #{new Date(pedido.createdAt || pedido.fechaCreacion).toLocaleDateString('es-AR')}
+              td
+                span.badge-status(class=`status-${pedido.estado || 'pendiente'}`) #{pedido.estado || 'pendiente'}
+              td(style="text-align: center;")
+                if pedido.estado === 'despachado'
+                  span(style="color: #166534; font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 4px;")
+                    i.fa-solid.fa-circle-check
+                    |  Listo
+                else
+                  button.btn-fefo(type="button" style="cursor: pointer;" onclick=`ejecutarDespachoFEFO('${pedido._id}')`)
+                    i.fa-solid.fa-truck-fast
+                    span  Despachar
+
+  script.
+    // Memoria temporal del pedido en curso
+    let itemsPedido = [];
+
+    const btnAgregar = document.getElementById('btnAgregarItem');
+    if (btnAgregar) {
+      btnAgregar.addEventListener('click', () => {
+        const prodSelect = document.getElementById('productoSelect');
+        const cantInput = document.getElementById('cantidadInput');
+        
+        const productoId = prodSelect.value;
+        const optionSeleccionado = prodSelect.options[prodSelect.selectedIndex];
+        
+        if (!productoId) {
+          alert('Seleccione un artículo válido.');
+          return;
+        }
+
+        const costoBase = parseFloat(optionSeleccionado.getAttribute('data-precio')) || 0;
+        const precioVenta = costoBase * 1.40;
+        
+        const productoNombre = optionSeleccionado.text.split('[SKU:')[0].trim();
+        const cantidad = parseInt(cantInput.value);
+
+        if (isNaN(cantidad) || cantidad <= 0) {
+          alert('Ingrese una cantidad mayor a 0.');
+          return;
+        }
+
+        const existe = itemsPedido.find(i => i.productoId === productoId);
+        if (existe) {
+          existe.cantidad += cantidad;
+        } else {
+          itemsPedido.push({ productoId, productoNombre, cantidad, precioVenta });
+        }
+
+        renderTablaTemporal();
+        cantInput.value = '';
+        prodSelect.value = '';
+      });
+    }
+
+    function renderTablaTemporal() {
+      const tbody = document.querySelector('#tablaTemporalItems tbody');
+      tbody.innerHTML = '';
+
+      if (itemsPedido.length === 0) {
+        tbody.innerHTML = '<tr id="filaVacia"><td colspan="4" style="padding: 10px; text-align: center; color: #94a3b8;">No se agregaron artículos al pedido aún.</td></tr>';
+        return;
+      }
+
+      itemsPedido.forEach((item, index) => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid #f1f5f9';
+        
+        tr.innerHTML = ' \
+          <td style="padding: 8px 0; font-weight: 600;">' + item.productoNombre + '</td> \
+          <td style="padding: 8px 0;">' + item.cantidad + ' u.</td> \
+          <td style="padding: 8px 0; color: #10b981; font-weight: 600;">$' + (item.precioVenta * item.cantidad).toFixed(2) + ' <small style="color:#64748b; font-weight:400;">($' + item.precioVenta.toFixed(2) + ' c/u)</small></td> \
+          <td style="padding: 8px 0;"><button type="button" style="background:none; border:none; color:#ef4444; cursor:pointer;" onclick="removerItemTemporal(' + index + ')"><i class="fa-solid fa-trash-can"></i></button></td> \
+        ';
+        tbody.appendChild(tr);
+      });
+    }
+
+    window.removerItemTemporal = function(index) {
+      itemsPedido.splice(index, 1);
+      renderTablaTemporal();
+    };
+
+    // Envío del pedido completo al backend con Validación de Crédito en el Frontend
+    const formVenta = document.getElementById('formNuevaVenta');
+    if (formVenta) {
+      formVenta.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const clienteSelect = document.getElementById('clienteSelect');
+        const clienteId = clienteSelect.value;
+
+        if (itemsPedido.length === 0) {
+          alert('El pedido debe contener al menos 1 artículo antes de ser emitido.');
+          return;
+        }
+
+        // CONTROL DE CRÉDITO VISUAL: Calculamos el total de la orden actual
+        let totalOrdenActual = 0;
+        itemsPedido.forEach(i => {
+          totalOrdenActual += i.cantidad * i.precioVenta;
+        });
+
+        // Extraemos el texto de la opción del cliente (ej: "Distribuidora Alborada (Dispo: $150000.50)")
+        const textoCliente = clienteSelect.options[clienteSelect.selectedIndex].text;
+        
+        // Expresión regular para capturar el valor numérico después de "Dispo: $"
+        const regexDispo = /Dispo:\s*\$([\d.,]+)/;
+        const coincidencia = textoCliente.match(regexDispo);
+        
+        if (coincidencia && coincidencia[1]) {
+          // Limpiamos puntos de miles si existieran y cambiamos coma por punto para parsear
+          let dispoLimpio = coincidencia[1].replace(/\./g, '').replace(',', '.');
+          const creditoDisponible = parseFloat(dispoLimpio) || 0;
+
+          // Si el costo de lo que se lleva supera su línea autorizada, bloqueamos la acción de inmediato
+          if (totalOrdenActual > creditoDisponible) {
+            alert('VENTA RECHAZADA (Control de Riesgo):\n\nEl total del pedido ($' + totalOrdenActual.toFixed(2) + ') supera el crédito disponible del cliente ($' + creditoDisponible.toFixed(2) + ').\nPor favor, reduzca cantidades o registre un cobro previo en la cuenta corriente.');
+            return;
+          }
+        }
+
+        const bodyData = {
+          clienteId,
+          items: itemsPedido.map(i => ({ productoId: i.productoId, cantidad: i.cantidad })),
+          observaciones: 'Venta registrada desde interfaz comercial unificada'
+        };
+
+        try {
+          const res = await fetch('/ventas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(bodyData)
+          });
+
+          const data = await res.json();
+
+          if (res.ok) {
+            alert('¡Venta registrada con éxito! Comprobante de crédito emitido.');
+            window.location.reload();
+          } else {
+            alert('Error: ' + (data.error || 'No se pudo confeccionar el pedido'));
+          }
+        } catch (err) {
+          alert('Error de red al conectar con el servidor.');
+        }
+      });
+    }
+
+    // Proceso de Despacho Logístico (FEFO)
+    async function ejecutarDespachoFEFO(pedidoId) {
+      if (!confirm('¿Confirmar salida de mercadería controlada por FEFO?')) return;
+      
+      try {
+        const res = await fetch('/ventas/' + pedidoId + '/despachar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok) {
+          alert(' ' + data.mensaje);
+          window.location.reload(); 
+        } else {
+          alert(' Error: ' + (data.error || 'No se pudo despachar'));
+        }
+      } catch (err) {
+        console.error('Error al despachar:', err);
+        alert('Hubo un error de red al procesar el despacho.');
+      }
+    }

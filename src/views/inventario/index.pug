@@ -1,0 +1,104 @@
+extends ../layout
+
+block contenido
+  p(style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;") <i class="fa-solid fa-boxes-packing"></i> Módulo de Logística. Registre las entradas de mercadería y controle el ordenamiento físico por criterio de vencimiento (FEFO).
+
+  //- FORMULARIO OPERATIVO PARA EL TRABAJADOR DE DEPÓSITO
+  .panel-ingreso
+    h3(style="font-size: 15px; font-weight: 700; color: #1e293b; margin: 0; display: inline-flex; align-items: center; gap: 8px;")
+      i.fa-solid.fa-square-plus(style="color: #10b981;")
+      | Registrar Entrada de Nuevo Lote (Recepción de Mercadería)
+    
+    form#formIngresoLote
+      .form-grid
+        .form-group
+          label Producto recibido
+          select.form-control(name="productoId" required)
+            option(value="") -- Seleccione el Producto --
+            each prod in productos
+              option(value=prod._id) #{prod.nombre} (#{prod.codigoSKU})
+
+        .form-group
+          label Proveedor de la Partida
+          select.form-control(name="proveedorId" required)
+            option(value="") -- Seleccione el Proveedor --
+            each prov in proveedores
+              option(value=prov._id) #{prov.nombre}
+
+        .form-group
+          label Código / N° Lote
+          input.form-control(type="text" name="numeroLote" placeholder="Ej: LOTE-AR-01" required)
+
+        .form-group
+          label Cantidad Unidades
+          input.form-control(type="number" name="cantidadInicial" min="1" placeholder="Ej: 100" required)
+
+        .form-group
+          label Fecha Vencimiento
+          input.form-control(type="date" name="fechaVencimiento" required)
+
+        button.btn-ingresar(type="submit" style="grid-column: span 2; margin-top: 10px;")
+          i.fa-solid.fa-dolly
+          | Registrar Ingreso
+
+  //- TABLA DE CONTROL DE EXISTENCIAS
+  .table-container(style="margin-top: 25px;")
+    table.data-table
+      thead
+        tr
+          th <i class="fa-solid fa-box"></i> Producto
+          th <i class="fa-solid fa-building"></i> Proveedor Trazable
+          th <i class="fa-solid fa-layer-group"></i> Número Lote
+          th <i class="fa-solid fa-cubes"></i> Cantidad Disponible
+          th <i class="fa-solid fa-calendar-xmark"></i> Fecha Vencimiento
+      tbody#tablaLotes
+        if !lotes || lotes.length === 0
+          tr
+            td(colspan="5" style="text-align: center; padding: 25px; color: var(--text-muted);") No hay lotes registrados en el depósito.
+        else
+          each lote in lotes
+            tr(style=lote.requiereAlerta ? "background-color: #fee2e2; color: #991b1b;" : "")
+              td(style="font-weight: 600;") #{lote.productoId ? lote.productoId.nombre : 'Producto S/N'}
+              td(style="color: #475569; font-weight: 500;") #{lote.proveedorId ? lote.proveedorId.nombre : 'Proveedor General'}
+              td(style="font-family: monospace; color: #64748b;") #{lote.numeroLote}
+              td
+                if lote.cantidadActual === 0
+                  span(style="color: #64748b; font-weight: 600; font-size: 12px; background: #e2e8f0; padding: 3px 8px; border-radius: 6px; display: inline-block;") 0 u. [Partida Agotada]
+                else
+                  span.qty-badge #{lote.cantidadActual} u.
+              td #{new Date(lote.fechaVencimiento).toLocaleDateString('es-AR')}
+
+  script.
+    document.getElementById('formIngresoLote').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const formData = new FormData(e.target);
+      const bodyData = {
+        productoId: formData.get('productoId'),
+        proveedorId: formData.get('proveedorId'),
+        numeroLote: formData.get('numeroLote'),
+        cantidadInicial: parseInt(formData.get('cantidadInicial')),
+        cantidadActual: parseInt(formData.get('cantidadInicial')), 
+        fechaVencimiento: formData.get('fechaVencimiento')
+      };
+
+      try {
+        const res = await fetch('/api/inventario/lotes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(bodyData)
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          alert('¡Lote trazable registrado con éxito en el depósito!');
+          window.location.reload(); 
+        } else {
+          alert('Error al registrar lote: ' + (data.error || 'Verifique los datos'));
+        }
+      } catch (err) {
+        console.error('Error de red:', err);
+        alert('Hubo un error de red al intentar conectarse con el depósito.');
+      }
+    });

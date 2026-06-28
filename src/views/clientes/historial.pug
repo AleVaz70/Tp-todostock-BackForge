@@ -1,0 +1,75 @@
+extends ../layout
+
+block contenido
+  //- BOTÓN VOLVER: Redirección forzada al panel principal de Clientes sin desvíos
+  .btn-volver-container(style="margin-bottom: 20px;")
+    a.btn-action-base.btn-ficha(href="/clientes" style="background: #3b7be2; font-size: 13px; font-weight: 700; color: white; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 6px;")
+      i.fa-solid.fa-arrow-left
+      |  Volver al panel de Clientes
+
+  p(style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;")
+    i.fa-solid.fa-folder-open
+    |  Dossier Comercial y Auditoría de Cuenta Corriente. Historial cronológico de transacciones, despachos y estado financiero individual.
+
+  //- RESUMEN FINANCIERO DEL CLIENTE (TARJETA DE INFORMACIÓN MAESTRA)
+  .panel-alta.summary-grid
+    div
+      span.summary-label Razón Social
+      h3.summary-value-main #{cliente.nombre}
+    div
+      span.summary-label CUIT Identificador
+      p.summary-value-mono #{cliente.cuit}
+    div
+      span.summary-label Límite de Crédito
+      p.summary-value-numeric $#{cliente.limiteCredito.toLocaleString('es-AR')}
+    div
+      span.summary-label Saldo Deudor de Caja
+      p.summary-value-saldo(class=cliente.saldo > 0 ? "saldo-positivo" : "saldo-cero") $#{(cliente.saldo || 0).toLocaleString('es-AR')}
+
+  //- LISTADO HISTÓRICO DE VENTAS / PEDIDOS
+  h2.section-title-icon
+    i.fa-solid.fa-clock-rotate-left(style="color: #64748b;")
+    | Registro Cronológico de Compras Realizadas
+
+  .table-container
+    table.data-table
+      thead
+        tr
+          th(style="width: 160px;") Fecha Operación
+          th Código Transacción
+          th Detalle de Artículos y Trazabilidad (Lotes)
+          th Monto Total ($)
+          th(style="text-align: center;") Estado Entrega
+      tbody
+        if !pedidos || pedidos.length === 0
+          tr
+            td(colspan="5" style="text-align: center; padding: 32px; color: var(--text-muted); font-weight: 500;") Este cliente mayorista aún no posee compras registradas en el sistema comercial.
+        else
+          each ped in pedidos
+            tr
+              td(style="font-weight: 500; color: #475569;")
+                i.fa-regular.fa-calendar(style="margin-right: 6px; color: #94a3b8;")
+                | #{new Date(ped.createdAt).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              td
+                span.id-badge ##{ped._id.toString().slice(-6).toUpperCase()}
+              td
+                if ped.items && ped.items.length > 0
+                  ul(style="margin: 0; padding-left: 14px; list-style-type: none;")
+                    each item in ped.items
+                      li.item-list-desc
+                        if item.productoId
+                          | • 
+                          strong #{item.productoId.nombre} 
+                          | x #{item.cantidad} #{item.productoId.unidad || 'u.'}
+                          //- 🏷️ Badge del lote asignado por FEFO para auditoría de reclamos
+                          span.badge-lote-fefo
+                            i.fa-solid.fa-barcode(style="font-size: 10px; margin-right: 3px;")
+                            | Lote: #{item.numeroLote || 'Partida General'}
+                        else
+                          | • 
+                          span(style="color: var(--text-muted); font-style: italic;") [Artículo removido del catálogo maestro]
+                else
+                  span(style="color: var(--text-muted); font-style: italic;") Sin ítems especificados
+              td(style="font-weight: 700; color: #0f172a;") $#{ped.total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+              td(style="text-align: center;")
+                span.badge-status.status-despachado(style="font-size: 10px;") #{ped.estado || 'Despachado'}

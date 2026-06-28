@@ -1,0 +1,105 @@
+extends layout
+
+block contenido
+  script(src="https://cdn.jsdelivr.net/npm/chart.js")
+
+  //- Banner de Bienvenida Personalizado
+  .welcome-card
+    h2.welcome-title ¡Hola, #{usuario.nombre || usuario.name}!
+    p.welcome-desc Terminal de Gestión Activa • Sector de Acceso: #{usuario.rol || usuario.role}
+
+  //- Espacio de Trabajo en Paralelo (Gráfico a la Izquierda, Paneles a la Derecha)
+  .dashboard-workspace
+    
+    //- SECCIÓN GRÁFICA (Columna Principal Izquierda)
+    .chart-container
+      h3(style="margin: 0 0 20px 0; font-size: 15px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px;")
+        i.fa-solid.fa-chart-line(style="color: #64748b;")
+        | Estadísticas y Evolución de Cuentas Financieras
+      div(style="position: relative; height: 380px; width: 100%;")
+        canvas#canvasGraficoDashboard
+
+    //- PANELES DE CONTROL RÁPIDO (Columna Derecha)
+    .dashboard-sidebar-panels
+      
+      //- ALERTAS CRÍTICAS (Se muestran primero para llamar la atención del operador)
+      if usuario.rol === 'Administrador' || usuario.rol === 'Compras'
+        .panel-card
+          .panel-header(style="color: #ef4444;")
+            i.fa-solid.fa-triangle-exclamation
+            h3 Alertas de Reposición Crítica
+          if !productosBajos || productosBajos.length === 0
+            p(style="color: #15803d; font-size: 13px; background: #dcfce7; padding: 12px; border-radius: 6px; text-align: center; font-weight: 500; margin: 0;") 
+              i.fa-solid.fa-circle-check(style="margin-right: 6px;")
+              | Todo el stock por encima del mínimo.
+          else
+            p(style="color: var(--text-muted); font-size: 13px; margin-top: -10px; margin-bottom: 16px;") Órdenes urgentes a emitir:
+            div(style="max-height: 140px; overflow-y: auto;")
+              each prod in productosBajos
+                .alert-item
+                  .alert-details
+                    span.alert-name #{prod.nombre}
+                    //- Reemplazala por esta versión corregida:
+                    span.alert-vendor
+                      i.fa-solid.fa-building-columns
+                      |  #{prod.proveedorNombre}
+                  span.alert-qty Mín: #{prod.stockMinimo} u.
+
+      //- PANEL COMPRAS
+      if usuario.rol === 'Administrador' || usuario.rol === 'Compras'
+        .panel-card
+          .panel-header(style="color: #3b82f6;")
+            i.fa-solid.fa-truck-ramp-box
+            h3 Abastecimiento
+          a.action-btn(href="/proveedores")
+            i.fa-solid.fa-truck
+            span Proveedores Homologados
+          a.action-btn(href="/productos")
+            i.fa-solid.fa-boxes-stacked
+            span Catálogo de Productos
+
+      //- PANEL VENTAS
+      if usuario.rol === 'Administrador' || usuario.rol === 'Vendedor'
+        .panel-card
+          .panel-header(style="color: #10b981;")
+            i.fa-solid.fa-wallet
+            h3 Operaciones Comerciales
+          a.action-btn(href="/ventas")
+            i.fa-solid.fa-file-invoice
+            span Emitir Factura / Venta
+          a.action-btn(href="/clientes")
+            i.fa-solid.fa-user-gear
+            span Finanzas de Clientes
+
+  script.
+    document.addEventListener("DOMContentLoaded", function() {
+      const ctx = document.getElementById('canvasGraficoDashboard').getContext('2d');
+      const rolUsuario = "#{usuario.rol}";
+      const mesesLabels = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio'];
+      let datasetsGrafico = [];
+
+      if (rolUsuario === 'Administrador') {
+        datasetsGrafico = [
+          { label: 'Inversión Compras ($)', data: [45000, 58000, 42000, 69000, 85000, 92000], backgroundColor: '#3b82f6', borderRadius: 6 },
+          { label: 'Recaudación Ventas ($)', data: [65000, 72000, 59000, 88000, 115000, 138000], backgroundColor: '#10b981', borderRadius: 6 }
+        ];
+      } else if (rolUsuario === 'Vendedor') {
+        datasetsGrafico = [{ label: 'Evolución de Ventas ($)', data: [65000, 72000, 59000, 88000, 115000, 138000], backgroundColor: '#10b981', borderRadius: 6 }];
+      } else if (rolUsuario === 'Compras') {
+        datasetsGrafico = [{ label: 'Volumen de Compras ($)', data: [45000, 58000, 42000, 69000, 85000, 92000], backgroundColor: '#3b82f6', borderRadius: 6 }];
+      }
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: { labels: mesesLabels, datasets: datasetsGrafico },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'top', labels: { font: { family: 'Inter', weight: 600, size: 12 }, color: '#475569' } } },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#64748b', font: { family: 'Inter' } } },
+            y: { grid: { color: '#f1f5f9' }, ticks: { color: '#64748b', font: { family: 'Inter' }, callback: function(v) { return '$' + v.toLocaleString('es-AR'); } } }
+          }
+        }
+      });
+    });

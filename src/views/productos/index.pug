@@ -1,0 +1,176 @@
+extends ../layout
+
+block contenido
+  p(style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;") 
+    i.fa-solid.fa-tags
+    |  Catálogo Maestro de Artículos. Módulo centralizado para la consulta de especificaciones, control de stock mínimo y disponibilidad de precios vigentes.
+  
+  //- FORMULARIO DE ALTA DE PRODUCTOS
+  if true || (usuario && (usuario.rol === 'Admin' || usuario.rol === 'Compras'))
+    .panel-alta
+      h3(style="font-size: 15px; font-weight: 700; color: #1e293b; margin: 0; display: inline-flex; align-items: center; gap: 8px;")
+        i.fa-solid.fa-box-open(style="color: #0ea5e9;")
+        | Registrar Nuevo Artículo en el Catálogo
+      
+      form#formAltaProducto
+        .form-grid
+          .form-group
+            label Nombre Comercial
+            input.form-control(type="text" name="nombre" placeholder="Ej: Jabón Líquido 3L" required)
+
+          .form-group
+            label Código SKU (Único)
+            input.form-control(type="text" name="codigoSKU" placeholder="Ej: JAB-300" required)
+
+          .form-group
+            label Categoría
+            input.form-control(type="text" name="categoria" placeholder="Ej: Limpieza" required)
+
+          .form-group
+            label Unidad Medida
+            input.form-control(type="text" name="unidad" placeholder="Ej: un" required)
+
+          .form-group
+            label Precio Mayorista Costo ($)
+            input.form-control(type="number" name="precio" min="1" placeholder="Ej: 1200" required)
+
+          .form-group
+            label Stock Mínimo Alerta
+            input.form-control(type="number" name="stockMinimo" min="1" placeholder="Ej: 20" required)
+
+          button.btn-guardar(type="submit")
+            i.fa-solid.fa-plus
+            |  Añadir
+
+  //- TABLA DE PRODUCTOS MAESTRA
+  .table-container
+    table.data-table
+      thead
+        tr
+          th Código SKU
+          th Descripción Producto
+          th Categoría
+          th Unidad
+          th Costo Compra
+          th Precio Venta (+40%)
+          th Stock Físico
+          th Stock Mínimo
+          th(style="text-align: center;") Acciones
+      tbody
+        if !productos || productos.length === 0
+          tr
+            td(colspan="9" style="text-align: center; padding: 20px; color: var(--text-muted);") No hay productos en el catálogo maestro.
+        else
+          each prod in productos
+            tr(style= (prod.stock || 0) <= prod.stockMinimo ? "background-color: #fef2f2; border-left: 4px solid #ef4444;" : "")
+              td
+                span.sku-badge #{prod.codigoSKU}
+              td(style="font-weight: 600;") #{prod.nombre}
+              td #{prod.categoria}
+              td #{prod.unidad}
+              
+              td(style="color: #b45309; font-weight: 600;") $#{prod.precio.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+              td(style="color: #0284c7; font-weight: 700;") $#{(prod.precio * 1.40).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+              
+              td
+                if (prod.stock || 0) <= prod.stockMinimo
+                  span(style="color: #ef4444; font-weight: 700; background: #fee2e2; padding: 2px 8px; border-radius: 4px;") #{prod.stock || 0} #{prod.unidad}. (Crítico)
+                else
+                  span(style="color: #166534; font-weight: 600;") #{prod.stock || 0} #{prod.unidad}.
+                  
+              td(style="color: #64748b;") #{prod.stockMinimo} u.
+              
+              td(style="text-align: center; display: flex; gap: 6px; justify-content: center;")
+                //- EVOLUCIÓN COMPONENTE: Inyección segura por Atributos de Datos HTML5
+                button.btn-modificar-precio(
+                  style="background: #f59e0b; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;"
+                  type="button"
+                  data-id=prod._id.toString()
+                  data-nombre=prod.nombre
+                  data-precio=prod.precio
+                  onclick="abrirPromptPrecio(this)"
+                )
+                  i.fa-solid.fa-tags
+                  |  Precio
+                
+                button.btn-eliminar(type="button" onclick=`eliminarProducto('${prod._id}')`)
+                  i.fa-solid.fa-trash-can
+
+  script.
+    const formAlta = document.getElementById('formAltaProducto');
+    if (formAlta) {
+      formAlta.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const bodyData = {
+          nombre: formData.get('nombre'),
+          codigoSKU: formData.get('codigoSKU').toUpperCase(),
+          categoria: formData.get('categoria'),
+          unidad: formData.get('unidad'),
+          precio: parseFloat(formData.get('precio')),
+          stockMinimo: parseInt(formData.get('stockMinimo'))
+        };
+        try {
+          const res = await fetch('/api/productos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(bodyData)
+          });
+          if (res.ok) {
+            alert('¡Producto añadido correctamente al catálogo!');
+            window.location.reload();
+          } else { alert('Error al crear'); }
+        } catch (err) { alert('Error de red'); }
+      });
+    }
+
+    // REFACTORIZACIÓN SEGURA: Captura el contexto del botón presionado
+    function abrirPromptPrecio(boton) {
+      const id = boton.getAttribute('data-id');
+      const nombre = boton.getAttribute('data-nombre');
+      const precioActual = parseFloat(boton.getAttribute('data-precio')) || 0;
+
+      const nuevoPrecio = prompt('Actualizar lista de precios para:\n' + nombre + '\n\nPrecio de costo actual: $' + precioActual.toFixed(2) + '\n\nIngrese el nuevo precio de costo ($):');
+      
+      if (nuevoPrecio === null) return;
+      // Sanitizamos quitando signos pesos accidentales
+      const precioParseado = parseFloat(nuevoPrecio.replace('$', '').trim());
+      
+      if (isNaN(precioParseado) || precioParseado <= 0) {
+        alert('❌ Ingrese un precio numérico válido y mayor a 0.');
+        return;
+      }
+
+      ejecutarCambioPrecio(id, precioParseado);
+    }
+
+    async function ejecutarCambioPrecio(id, precioNuevo) {
+      try {
+        // Enrutamos al endpoint RESTful de mutación de datos de tu web.routes
+        const res = await fetch('/api/productos/' + id, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ precio: precioNuevo })
+        });
+
+        if (res.ok) {
+          alert('¡Precio actualizado y sincronizado en el catálogo maestro!');
+          window.location.reload();
+        } else {
+          alert('No se pudo actualizar el precio en el catálogo.');
+        }
+      } catch (err) {
+        alert('Error de red al intentar conectar con el catálogo.');
+      }
+    }
+
+    async function eliminarProducto(id) {
+      if (!confirm('⚠️ ¿Está seguro de eliminar este producto?')) return;
+      try {
+        const res = await fetch('/api/productos/' + id, { method: 'DELETE' });
+        if (res.ok) {
+          alert('Producto removido.');
+          window.location.reload();
+        } else { alert('El producto posee dependencias activas.'); }
+      } catch (err) { alert('Error de red.'); }
+    }

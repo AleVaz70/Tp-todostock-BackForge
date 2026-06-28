@@ -1,0 +1,108 @@
+extends ../layout
+
+block contenido
+  
+
+  p(style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;") <i class="fa-solid fa-truck-field"></i> Registro de Proveedores Homologados. Gestione las terminales de suministro de mercadería de la distribuidora.
+
+  //- FORMULARIO DE ALTA DE PROVEEDORES
+  .panel-alta
+    h3(style="font-size: 15px; font-weight: 700; color: #1e293b; margin: 0; display: inline-flex; align-items: center; gap: 8px;")
+      i.fa-solid.fa-building-shield(style="color: #10b981;")
+      | Registrar Nuevo Proveedor Corporativo
+    
+    form#formAltaProveedor
+      .form-grid
+        .form-group
+          label Nombre de la Empresa / Razón Social
+          input.form-control(type="text" name="nombre" placeholder="Ej: Arcor S.A." required)
+
+        .form-group
+          label CUIT
+          input.form-control(type="text" name="cuit" placeholder="Ej: 30-70123456-8" required)
+
+        .form-group
+          label Rubro de Suministro
+          input.form-control(type="text" name="rubro" placeholder="Ej: Alimentos y Golosinas" required)
+
+        button.btn-guardar(type="submit")
+          i.fa-solid.fa-floppy-disk
+          | Guardar Proveedor
+
+  //- TABLA DE PROVEEDORES ACTUALIZADA
+  .table-container
+    table.data-table
+      thead
+        tr
+          th Razón Social
+          th CUIT
+          th Rubro Asignado
+          th Estado
+          th(style="text-align: center;") Acciones
+      tbody
+        if proveedores.length === 0
+          tr
+            td(colspan="5" style="text-align: center; padding: 20px; color: var(--text-muted);") No hay proveedores homologados registrados.
+        else
+          each prov in proveedores
+            tr
+              td(style="font-weight: 600;") #{prov.nombre}
+              td(style="font-family: monospace;") #{prov.cuit}
+              td #{prov.rubro}
+              td
+                span(class=prov.activo !== false ? 'status-activo' : 'status-bloqueado') #{prov.activo !== false ? 'Homologado' : 'Suspendido'}
+              td(style="text-align: center; display: flex; gap: 6px; justify-content: center; align-items: center;")
+                //- ENLACE DIRECTO: Acceso al Dossier de Suministros
+                a(href=`/proveedores/${prov._id}/historial` style="background: #0ea5e9; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; transition: background 0.2s;")
+                  i.fa-solid.fa-folder-open
+                  | Ficha
+
+                if prov.activo !== false
+                  button(style="background: #f59e0b; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: background 0.2s;" onclick=`cambiarEstadoProveedor('${prov._id}', 'bloquear')`)
+                    i.fa-solid.fa-ban
+                    | Suspender
+                else
+                  button(style="background: #10b981; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: background 0.2s;" onclick=`cambiarEstadoProveedor('${prov._id}', 'desbloquear')`)
+                    i.fa-solid.fa-circle-check
+                    | Habilitar
+
+  script.
+    // Script de Alta
+    document.getElementById('formAltaProveedor').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const bodyData = {
+        nombre: formData.get('nombre'),
+        cuit: formData.get('cuit'),
+        rubro: formData.get('rubro')
+      };
+      try {
+        const res = await fetch('/api/proveedores', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(bodyData)
+        });
+        if (res.ok) {
+          alert('¡Proveedor incorporado con éxito!');
+          window.location.reload();
+        } else { alert('Error al crear'); }
+      } catch (err) { alert('Error de red'); }
+    });
+
+    // FUNCIÓN DE BAJA/ALTA LÓGICA DE PROVEEDORES
+    async function cambiarEstadoProveedor(id, accion) {
+      if (!confirm(`¿Está seguro de cambiar el estado de este proveedor?`)) return;
+      try {
+        const res = await fetch(`/api/proveedores/${id}/${accion}`, {
+          method: 'PATCH'
+        });
+        if (res.ok) {
+          alert(`Operación exitosa: Estado del proveedor actualizado.`);
+          window.location.reload();
+        } else {
+          alert('Error al cambiar estado del proveedor.');
+        }
+      } catch (err) {
+        alert('Error de red.');
+      }
+    }

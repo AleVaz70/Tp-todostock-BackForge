@@ -1,0 +1,180 @@
+extends ../layout
+
+block contenido
+  p(style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;") 
+    i.fa-solid.fa-users
+    |  Administración de Cuentas Corrientes. Registre nuevos clientes mayoristas, asigne sus límites de crédito y procese cobranzas.
+
+  //- FORMULARIO DE ALTA DE CLIENTES
+  .panel-alta
+    h3(style="font-size: 15px; font-weight: 700; color: #1e293b; margin: 0; display: inline-flex; align-items: center; gap: 8px;")
+      i.fa-solid.fa-user-plus(style="color: #0ea5e9;")
+      | Registrar Nuevo Cliente Mayorista
+    
+    form#formAltaCliente
+      .form-grid
+        .form-group
+          label Razón Social / Nombre
+          input.form-control(type="text" name="nombre" placeholder="Ej: Distribuidora Alborada" required)
+
+        .form-group
+          label CUIT
+          input.form-control(type="text" name="cuit" placeholder="Ej: 20-35123456-9" required)
+
+        .form-group
+          label Límite de Crédito ($)
+          input.form-control(type="number" name="limiteCredito" min="0" placeholder="Ej: 200000" required)
+
+        .form-group
+          label Plazo de Pago (Días)
+          input.form-control(type="number" name="diasPlazo" min="0" placeholder="Ej: 30" required)
+
+        button.btn-guardar(type="submit")
+          i.fa-solid.fa-floppy-disk
+          | Guardar Cliente
+
+  //- TABLA GENERAL DE CLIENTES
+  .table-container
+    table.data-table
+      thead
+        tr
+          th Razón Social
+          th CUIT
+          th Límite Crédito
+          th Saldo Acumulado
+          th Estado
+          th(style="text-align: center;") Acciones
+      tbody
+        if !clientes || clientes.length === 0
+          tr
+            td(colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted);") No hay clientes mayoristas registrados.
+        else
+          each cli in clientes
+            tr
+              td(style="font-weight: 600;") #{cli.nombre}
+              td(style="font-family: monospace;") #{cli.cuit}
+              td $#{cli.limiteCredito.toLocaleString('es-AR')}
+              td(style=cli.saldo > 0 ? "color: #b45309; font-weight: 600;" : "color: #166534;") $#{(cli.saldo || 0).toLocaleString('es-AR')}
+              td
+                span(class=cli.activo !== false ? 'status-activo' : 'status-bloqueado') #{cli.activo !== false ? 'Activo' : 'Bloqueado'}
+              td.actions-cell
+                a.btn-action-base.btn-ficha(href=`/clientes/${cli._id}/historial`)
+                  i.fa-solid.fa-folder-open
+                  | Ficha
+
+                button.btn-action-base.btn-cobrar(onclick=`registrarPagoCliente('${cli._id}', '${cli.nombre}', ${cli.saldo || 0})`)
+                  i.fa-solid.fa-money-bill-wave
+                  | Cobrar
+
+                button.btn-action-base.btn-credito(onclick=`modificarCreditoCliente('${cli._id}', '${cli.nombre}', ${cli.limiteCredito})`)
+                  i.fa-solid.fa-pen-to-square
+                  | Crédito
+
+                if cli.activo !== false
+                  button.btn-action-base.btn-status-bloquear(onclick=`cambiarEstadoCliente('${cli._id}', 'bloquear')`) 
+                    i.fa-solid.fa-user-slash
+                else
+                  button.btn-action-base.btn-status-habilitar(onclick=`cambiarEstadoCliente('${cli._id}', 'desbloquear')`) 
+                    i.fa-solid.fa-user-check
+
+  script.
+    // Lógica del Formulario de Alta
+    document.getElementById('formAltaCliente').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const bodyData = {
+        nombre: formData.get('nombre'),
+        cuit: formData.get('cuit'),
+        limiteCredito: parseFloat(formData.get('limiteCredito')),
+        diasPlazo: parseInt(formData.get('diasPlazo')),
+        saldo: 0
+      };
+      try {
+        const res = await fetch('/clientes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(bodyData)
+        });
+        if (res.ok) {
+          alert('✅ ¡Cliente registrado con éxito!');
+          window.location.reload();
+        } else { alert('Error al crear'); }
+      } catch (err) { alert('Error de red'); }
+    });
+
+    // REGISTRAR COBRO / PAGO DE CLIENTE
+    async function registrarPagoCliente(id, nombre, saldoActual) {
+      if (saldoActual <= 0) {
+        alert(`El cliente ${nombre} no registra saldo deudor de caja.`);
+        return;
+      }
+
+      const pagoInput = prompt(`Registrar cobro para: ${nombre}\nDeuda Actual: $${saldoActual.toLocaleString('es-AR')}\n\nIngrese el monto entregado por el cliente:`);
+      if (pagoInput === null) return;
+
+      const pagoLimpio = pagoInput.replace('$', '').trim();
+      const montoPago = parseFloat(pagoLimpio);
+
+      if (isNaN(montoPago) || montoPago <= 0) {
+        alert('Ingrese un monto de pago numérico válido y mayor a 0.');
+        return;
+      }
+
+      if (montoPago > saldoActual) {
+        alert('El monto ingresado supera la deuda total del cliente. Ingrese el valor exacto o un pago parcial.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/clientes/${id}/pago`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ monto: montoPago })
+        });
+
+        if (res.ok) {
+          alert('¡Cobranza procesada con éxito! El saldo de la cuenta corriente fue actualizado.');
+          window.location.reload();
+        } else {
+          alert('Error al procesar el pago en el servidor.');
+        }
+      } catch (err) {
+        alert('Error de red al registrar el pago del cliente.');
+      }
+    }
+
+    // FUNCIÓN PARA MODIFICAR EL LÍMITE DE CRÉDITO
+    async function modificarCreditoCliente(id, nombre, limiteActual) {
+      const nuevoLimite = prompt(`Modificar límite de crédito para: ${nombre}\nValor actual: $${limiteActual}\n\nIngrese el nuevo monto (solo números):`);
+      if (nuevoLimite === null) return;
+      const limiteParseado = parseFloat(nuevoLimite);
+      
+      if (isNaN(limiteParseado) || limiteParseado < 0) {
+        alert('Por favor, ingrese un monto numérico válido.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/clientes/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ limiteCredito: limiteParseado })
+        });
+        if (res.ok) {
+          alert('Límite de crédito actualizado con éxito.');
+          window.location.reload();
+        } else { alert('Error al actualizar.'); }
+      } catch (err) { alert('Error de red.'); }
+    }
+
+    // Función de bloqueo / activación
+    async function cambiarEstadoCliente(id, accion) {
+      if (!confirm(`¿Está seguro de que desea ${accion} este cliente?`)) return;
+      try {
+        const res = await fetch(`/clientes/${id}/${accion}`, { method: 'PATCH' });
+        if (res.ok) {
+          alert(`Cliente ${accion}ado.`);
+          window.location.reload();
+        } else { alert('Error al cambiar estado.'); }
+      } catch (err) { alert('Error de red.'); }
+    }
