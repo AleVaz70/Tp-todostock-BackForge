@@ -139,9 +139,8 @@ npm install
 
 2. Configurar el archivo de Variables de Entorno
 
-Cree un archivo llamado exactamente `.env` en la raíz del proyecto (a la altura de `src` e `index.js`) e inserte la estructura de conexión del Cluster Cloud de Atlas provista por el grupo:
+Cree un archivo llamado exactamente .env en la raíz del proyecto (a la altura de src e index.js) e inserte la estructura de conexión del Cluster Cloud de Atlas provista por el grupo:
 
-```env
 PORT=3000
 NODE_ENV=development
 MONGO_URI=mongodb+srv://To.... (Nota: Reemplace con la dirección completa provista en la entrega de Google Drive)
